@@ -37,8 +37,8 @@ dev = ["pytest"]
 innerlens = "innerlens.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/innerlens/innerlens"
-Source = "https://github.com/innerlens/innerlens"
+Homepage = "https://github.com/Yash-Bambhroliya/innerlens"
+Source = "https://github.com/Yash-Bambhroliya/innerlens"
 
 [tool.setuptools.packages.find]
 where = ["src"]

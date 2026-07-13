@@ -21,4 +21,4 @@ thinking, and whether it's making it up.
 Built on anthropics/jacobian-lens (Apache-2.0) and the Neuronpedia pre-fitted
 lenses. Apache-2.0.
 
-[0.1.0]: https://github.com/innerlens/innerlens/releases/tag/v0.1.0
+[0.1.0]: https://github.com/Yash-Bambhroliya/innerlens/releases/tag/v0.1.0
