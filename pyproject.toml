@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "innerlens"
+version = "0.1.0"
+description = "See what your open model is really thinking — and whether it's making it up. A drop-in J-space workspace layer: live introspection + a free hallucination signal for any HuggingFace model."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "innerlens contributors" }]
+keywords = [
+    "llm", "interpretability", "hallucination", "jacobian-lens", "jspace",
+    "introspection", "transformers", "reliability", "openai",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# torch/transformers/jlens are heavy and environment-specific; the core imports
+# them lazily and documents them as required. Kept out of hard deps so
+# `pip install innerlens` never fights a user's existing CUDA/torch setup.
+dependencies = []
+
+[project.optional-dependencies]
+# the model runtime (install to match your CUDA); jlens is the reference lens lib
+runtime = ["torch", "transformers", "accelerate", "jlens @ git+https://github.com/anthropics/jacobian-lens"]
+server = ["fastapi", "uvicorn"]
+dev = ["pytest"]
+
+[project.scripts]
+innerlens = "innerlens.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/innerlens/innerlens"
+Source = "https://github.com/innerlens/innerlens"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,15 @@
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.onward/
+slices/
+server.log
+*.pt
+.DS_Store
+.idea/
+.vscode/

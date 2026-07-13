@@ -1,0 +1,19 @@
+innerlens
+Copyright 2026 innerlens contributors
+
+Licensed under the Apache License, Version 2.0.
+
+This product builds on and depends on:
+
+- jacobian-lens (jlens) — https://github.com/anthropics/jacobian-lens
+  Copyright Anthropic, licensed under the Apache License, Version 2.0.
+  innerlens uses jlens to fit/load Jacobian lenses and to read a model's
+  internal workspace.
+
+- Pre-fitted Jacobian lenses released via Neuronpedia
+  (neuronpedia/jacobian-lens on the Hugging Face Hub), companion to the paper
+  "A global workspace in language models" / "Verbalizable Representations Form a
+  Global Workspace in Language Models" (Anthropic, 2026).
+
+innerlens is an independent project and is not affiliated with or endorsed by
+Anthropic or Neuronpedia.
