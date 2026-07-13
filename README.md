@@ -94,25 +94,34 @@ r.x_workspace["likely_hallucinating"] # False   <- every response, for free
 Your app doesn't change. `x_workspace` is an extra field OpenAI SDKs ignore, so
 existing code keeps working while new code can read the signal.
 
-## Does the hallucination signal actually work?
+## Does the hallucination signal actually work? (honest benchmark)
 
-Yes — measured, not asserted. On **TriviaQA** (200 questions, Qwen3.5-4B), the
-internal-confidence signal predicts whether the model's answer is **correct**:
+Measured, not asserted — **including against the obvious baseline**, the model's
+own output-token probability, read at the identical tokens with identical
+aggregation (both signals come from the same lens call per token, so the
+comparison is exactly fair). Predicting answer correctness, Qwen3.5-4B:
 
-| signal | AUROC |
-| --- | --- |
-| innerlens internal-confidence (weakest entity token) | **0.80** |
-| mean entity-token confidence | 0.75 |
+| signal | TriviaQA (n=500) | PopQA (n=500) |
+| --- | --- | --- |
+| innerlens internal-confidence (weakest entity token) | 0.79 | 0.62 |
+| output-token probability (same tokens) | **0.86** | 0.59 |
+| sequence mean log-prob (perplexity) | **0.86** | 0.60 |
 
-That's a free, single-forward-pass signal read from the model's own internals —
-no second model, no sampling, no external knowledge base. Reproduce it with
-[`eval_via_library.py`](eval_via_library.py).
+**The honest read:** the internal signal is real, but if all you want is a bare
+hallucination *score*, the model's own token probability is as strong or stronger
+(significantly better on TriviaQA, DeLong p<0.001; statistically tied on
+rare-entity PopQA). We're publishing that instead of hiding it. What the readout
+uniquely gives you is the **trace** — the per-token inner monologue and internal
+support, i.e. *what the model was considering underneath* and *why* an answer is
+shaky — which no scalar from the logits can show. Reproduce both numbers:
+[`eval_via_library.py`](eval_via_library.py) ·
+[`eval/eval_baseline.py`](eval/eval_baseline.py).
 
-**Honest caveats.** This is an early result on one 4B model and one dataset, and
-the signal is imperfect (a confident model can still be wrong, and a correct
-refusal can read low). String-match grading is strict, so the true AUROC is
-likely a touch higher than measured. Treat the score as a **strong prior, not a
-verdict** — and see [what it does and doesn't catch](#how-it-works).
+**Honest caveats.** Early results on one 4B model. The min-entity internal
+readout false-alarms on some famous correct entities (e.g. "Pac-Man": internal
+0.14 while output-prob is 0.98), which is exactly why it loses as a scalar on
+easy trivia. PopQA's strict alias grading is noisy, so its absolute AUROCs are
+depressed for every signal. Treat any score as a **prior, not a verdict**.
 
 ## How it works
 
@@ -124,7 +133,8 @@ the model say*. innerlens reads this at the model's late layers for each generat
 token and reports:
 
 - **`internal_confidence`** — how strongly the late-layer workspace supports the
-  token the model actually emitted. High on known facts, low on fabrications.
+  token the model actually emitted. Collapses on fabrication, though it can also
+  read low on some well-known facts (see the honest benchmark above).
 - **`inner_monologue`** — the top internal dispositions (what it was "thinking").
 - The **hallucination score** aggregates internal-confidence over the answer's
   entity tokens (skipping function words and trailing rambling).
@@ -134,6 +144,9 @@ in the activations underneath.
 
 ## Limitations
 
+- As a bare scalar detector, output-token probability is a comparable-or-better
+  baseline (see the benchmark above) — use innerlens for the *trace*, not to beat
+  logits at a single number.
 - Needs a fitted lens for the model (registry ships Qwen; others via `jlens.fit`).
 - v1 computes the per-token readout with one forward per traced token — fine for
   short answers/demos; batched activation-hook streaming is on the roadmap.
