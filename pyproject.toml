@@ -28,8 +28,10 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-# the model runtime (install to match your CUDA); jlens is the reference lens lib
-runtime = ["torch", "transformers", "accelerate", "jlens @ git+https://github.com/anthropics/jacobian-lens"]
+# the model runtime (install to match your CUDA). NOTE: jlens (the reference
+# lens library) is GitHub-only, so PyPI can't declare it here — install it with
+#   pip install "git+https://github.com/anthropics/jacobian-lens"
+runtime = ["torch", "transformers", "accelerate"]
 server = ["fastapi", "uvicorn"]
 dev = ["pytest"]
 

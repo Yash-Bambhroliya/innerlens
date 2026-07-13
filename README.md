@@ -49,9 +49,9 @@ workspace is visibly guessing, and innerlens catches it.
 ## Install
 
 ```bash
-pip install innerlens          # the library
-# then install a runtime to match your CUDA/torch, plus the lens:
-pip install "innerlens[runtime]"   # torch, transformers, jacobian-lens
+pip install innerlens                 # the library
+pip install "innerlens[runtime]"      # torch, transformers, accelerate
+pip install "git+https://github.com/anthropics/jacobian-lens"   # the lens lib (GitHub-only)
 ```
 
 Runs any HuggingFace decoder with a published Jacobian lens (Qwen3.5-4B and
