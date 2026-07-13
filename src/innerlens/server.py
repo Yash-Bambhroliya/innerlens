@@ -11,9 +11,10 @@ base_url.
     # then, in your app:
     #   client = OpenAI(base_url="http://localhost:8000/v1", api_key="x")
     #   r = client.chat.completions.create(model="innerlens", messages=[...])
-    #   r.choices[0].message.content        # the answer
-    #   r.x_workspace["confidence"]         # internal-confidence [0,1]
-    #   r.x_workspace["likely_hallucinating"]
+    #   r.choices[0].message.content           # the answer
+    #   r.x_workspace["confidence"]            # internal-confidence [0,1] (the trace signal)
+    #   r.x_workspace["output_confidence"]     # the model's own token probability
+    #   r.x_workspace["likely_hallucinating"]  # (the stronger bare scalar — see README)
 """
 from __future__ import annotations
 

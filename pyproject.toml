@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "innerlens"
-version = "0.1.0"
+version = "0.2.0"
 description = "See what your open model is really thinking — and whether it's making it up. A drop-in J-space workspace layer: live introspection + a free hallucination signal for any HuggingFace model."
 readme = "README.md"
 requires-python = ">=3.10"

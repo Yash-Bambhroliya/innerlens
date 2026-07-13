@@ -47,6 +47,10 @@ class TokenTrace:
     inner_monologue: List[str] = field(default_factory=list)  # top internal dispositions
     is_content: bool = True             # False for whitespace/punctuation tokens
     is_entity: bool = True              # False for stopwords/discourse markers too
+    output_confidence: float = float("nan")  # the model's own softmax prob for this token
+    # ^ the standard token-probability signal, read at the same position. As a bare
+    #   hallucination scalar it benchmarks as strong or stronger than
+    #   internal_confidence (see README) — exposed so users get both.
 
 
 @dataclass
@@ -86,6 +90,15 @@ class WorkspaceResult:
         return sum(t.internal_confidence for t in ents) / len(ents) if ents else 1.0
 
     @property
+    def output_confidence(self) -> float:
+        """The model's own output-token probability at the weakest entity token
+        (same aggregation as `confidence`). Honestly benchmarked, this is the
+        stronger bare hallucination scalar on easy trivia (README) — use it for
+        a single number; use the internal trace for the *why*."""
+        return min((t.output_confidence for t in self._entities
+                    if not math.isnan(t.output_confidence)), default=1.0)
+
+    @property
     def likely_hallucinating(self) -> bool:
         return self.confidence < self.threshold
 
@@ -94,9 +107,11 @@ class WorkspaceResult:
             "text": self.text,
             "confidence": round(self.confidence, 4),
             "min_confidence": round(self.min_confidence, 4),
+            "output_confidence": round(self.output_confidence, 4),
             "likely_hallucinating": self.likely_hallucinating,
             "tokens": [
                 {"token": t.token, "internal_confidence": round(t.internal_confidence, 4),
+                 "output_confidence": round(t.output_confidence, 4),
                  "entropy": round(t.entropy, 4), "inner_monologue": t.inner_monologue}
                 for t in self.tokens
             ],
@@ -164,11 +179,13 @@ class InnerLens:
 
     # -- the workspace read ------------------------------------------------- #
     def _readout(self, context_text: str, token_id: int):
-        """Internal-confidence, entropy, and inner-monologue for `token_id`
-        given the disposition at the end of context_text."""
+        """Internal-confidence, output-token probability, entropy, and
+        inner-monologue for `token_id` given the disposition at the end of
+        context_text. Both confidences come from the SAME lens call at the same
+        position — the J-lens disposition and the model's actual output softmax."""
         import torch
-        jl, _, _ = self.lens.apply(self.model, context_text, layers=self.late_layers,
-                                   positions=[-1])
+        jl, model_logits, _ = self.lens.apply(self.model, context_text,
+                                              layers=self.late_layers, positions=[-1])
         best_conf, best_ent, monologue = 0.0, 0.0, []
         for layer in self.late_layers:
             logits = jl[layer][0].float()
@@ -178,7 +195,11 @@ class InnerLens:
                 best_conf = conf
                 best_ent = -(p * torch.log(p + 1e-9)).sum().item()
                 monologue = [self.tok.decode([t]) for t in logits.topk(self.monologue_k).indices]
-        return best_conf, best_ent, monologue
+        ml = torch.as_tensor(model_logits)
+        while ml.dim() > 1:
+            ml = ml[-1]
+        out_conf = torch.softmax(ml.float(), -1)[token_id].item()
+        return best_conf, out_conf, best_ent, monologue
 
     @staticmethod
     def _is_content(piece: str) -> bool:
@@ -218,13 +239,13 @@ class InnerLens:
             piece = self.tok.decode([tid])
             if i < cap:
                 ctx = formatted + self.tok.decode(gen_ids[:i])
-                conf, ent, mono = self._readout(ctx, tid)
+                conf, out_conf, ent, mono = self._readout(ctx, tid)
             else:
-                conf, ent, mono = float("nan"), float("nan"), []
+                conf, out_conf, ent, mono = float("nan"), float("nan"), float("nan"), []
             traces.append(TokenTrace(
                 token=piece, token_id=tid, internal_confidence=conf, entropy=ent,
                 inner_monologue=mono, is_content=self._is_content(piece),
-                is_entity=self._is_entity(piece)))
+                is_entity=self._is_entity(piece), output_confidence=out_conf))
         return WorkspaceResult(text=text, tokens=traces, threshold=threshold)
 
     # convenience alias

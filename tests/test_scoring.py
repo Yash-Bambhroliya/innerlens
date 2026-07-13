@@ -5,9 +5,10 @@ from innerlens.lenses import lens_for
 import pytest
 
 
-def tok(token, conf, *, entity=True, content=True):
+def tok(token, conf, *, entity=True, content=True, out=float("nan")):
     return TokenTrace(token=token, token_id=0, internal_confidence=conf, entropy=0.0,
-                      inner_monologue=[], is_content=content, is_entity=entity)
+                      inner_monologue=[], is_content=content, is_entity=entity,
+                      output_confidence=out)
 
 
 def test_confidence_is_weakest_entity_token():
@@ -56,11 +57,27 @@ def test_content_classifier():
 
 
 def test_to_dict_shape():
-    r = WorkspaceResult("x", [tok("Foo", 0.42)])
+    r = WorkspaceResult("x", [tok("Foo", 0.42, out=0.9)])
     d = r.to_dict()
     assert d["text"] == "x"
     assert d["confidence"] == 0.42
+    assert d["output_confidence"] == 0.9
+    assert d["tokens"][0]["output_confidence"] == 0.9
     assert "likely_hallucinating" in d and isinstance(d["tokens"], list)
+
+
+def test_output_confidence_same_aggregation_as_internal():
+    # weakest ENTITY token, function words excluded — identical rule to `confidence`
+    r = WorkspaceResult("The Paris", [tok("The", 0.1, entity=False, out=0.05),
+                                      tok(" Paris", 0.9, out=0.8),
+                                      tok(" France", 0.7, out=0.6)])
+    assert r.output_confidence == 0.6
+    assert r.confidence == 0.7
+
+
+def test_output_confidence_skips_untraced_nan_tokens():
+    r = WorkspaceResult("a b", [tok("Foo", 0.6, out=0.4), tok("Bar", 0.8)])  # Bar untraced
+    assert r.output_confidence == 0.4
 
 
 def test_registry_known_and_unknown():

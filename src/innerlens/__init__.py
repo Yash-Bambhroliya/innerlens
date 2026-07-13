@@ -4,9 +4,10 @@ making it up.
     from innerlens import InnerLens
     il = InnerLens.load("Qwen/Qwen3.5-4B")
     r = il.generate("Who painted the Mona Lisa?")
-    print(r.text, "| confidence:", r.confidence, "| hallucinating:", r.likely_hallucinating)
+    print(r.text, "| internal:", r.confidence, "| output-prob:", r.output_confidence,
+          "| hallucinating:", r.likely_hallucinating)
     for t in r.tokens:
-        print(t.token, t.internal_confidence, t.inner_monologue)
+        print(t.token, t.internal_confidence, t.output_confidence, t.inner_monologue)
 """
 from innerlens.core import (
     DEFAULT_HALLUCINATION_THRESHOLD,
@@ -16,7 +17,7 @@ from innerlens.core import (
 )
 from innerlens.lenses import LensRef, REGISTRY
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "InnerLens",
     "WorkspaceResult",

@@ -68,9 +68,11 @@ r = il.generate("Who painted the Mona Lisa?")
 
 print(r.text)                  # "Leonardo da Vinci"
 print(r.confidence)            # 0.71  — internal support for the weakest answer token
+print(r.output_confidence)     # 0.94  — the model's own token probability (the
+                               #         stronger bare scalar — see the benchmark)
 print(r.likely_hallucinating)  # False
 for t in r.tokens:             # per-token introspection
-    print(t.token, t.internal_confidence, t.inner_monologue)
+    print(t.token, t.internal_confidence, t.output_confidence, t.inner_monologue)
 ```
 
 ## Use it as a drop-in OpenAI endpoint (the wedge)
@@ -87,7 +89,8 @@ r = client.chat.completions.create(model="innerlens",
         messages=[{"role": "user", "content": "What is the capital of Japan?"}])
 
 r.choices[0].message.content          # "Tokyo"
-r.x_workspace["confidence"]           # 0.97
+r.x_workspace["confidence"]           # 0.97  — internal (the trace signal)
+r.x_workspace["output_confidence"]    # 0.99  — the model's own token probability
 r.x_workspace["likely_hallucinating"] # False   <- every response, for free
 ```
 
